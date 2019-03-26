@@ -1,0 +1,78 @@
+/**
+ * @file   ads1015.c
+ *
+ * @brief  I2C driver for ads1015
+ *
+ * @date   Feb.15th, 2018
+ * @author David Dong <haochend@andrew.cmu.edu>
+ *
+ */
+
+#include <ads1015.h>
+#include <i2c.h>
+#include <kstdint.h>
+#include <printk.h>
+
+/** @brief Audio channel identifier */
+#define AUDIO_CHANNEL 2
+/** @brief Light channel identifier */
+#define LIGHT_CHANNEL 3
+
+/** @brief Slave addr for ADC */
+#define ADS_VDD 0b1001001
+
+/** @brief Conversion register */
+#define ADS_CONV    0
+/** @brief Config register */
+#define ADS_CONFIG  1
+
+/** @brief MSB(byte) value for config reg */
+#define CONFIG_MSB  0b11000101
+/** @brief MSB(byte) value for light */
+#define CONFIG_MSB_LIGHT  0b11000001
+/** @brief LSB(byte) value for config reg */
+#define CONFIG_LSB  0b10000011
+
+/** @brief Index for mux (mod 8) */
+#define MUX_IDX     4
+
+/**
+* @brief initialize ADS1015
+*/
+void adc_init(void) {
+  i2c_master_init(I2C_CLK_100KHZ);
+}
+
+
+/**
+* @brief read a value from the ADC
+*
+* @param channel 0 through 3
+* @return the value read from the ADC
+*/
+uint16_t adc_read(uint8_t channel) {
+  uint8_t buf[sizeof(uint16_t)];
+  uint16_t result;
+
+  uint8_t conf[3] = {
+    ADS_CONFIG,
+    CONFIG_MSB,
+    CONFIG_LSB
+  };
+  uint8_t conv[1] = {
+    ADS_CONV
+  };
+
+  conf[1] |= channel << (MUX_IDX);
+  if (channel == LIGHT_CHANNEL) {
+    conf[1] = CONFIG_MSB_LIGHT;
+  }
+
+  i2c_master_write(conf, sizeof(conf), ADS_VDD);
+  i2c_master_write(conv, sizeof(conv), ADS_VDD);
+  i2c_master_read(buf, sizeof(buf), ADS_VDD);
+
+  result = ((buf[0]) << 8);
+  result |= (buf[1]);
+  return result;
+}

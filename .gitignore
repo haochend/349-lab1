@@ -1,0 +1,6 @@
+code/doc/
+code/doxygen.warn
+*.o
+*.elf
+*.img
+*.asm
